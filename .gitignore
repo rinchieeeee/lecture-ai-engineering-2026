@@ -1,4 +1,6 @@
 .venv/
+.venv-lora/
+runs/
 __pycache__/
 .pytest_cache/
 *.pyc
@@ -12,3 +14,10 @@ learning_log/
 
 # macOS
 .DS_Store
+
+# 用語集Q&Aの生成データ（手書きの cases.json と説明は追跡する）
+/data/glossary_sft/*.jsonl
+/data/glossary_sft/gold.json
+/data/glossary_sft/metadata.json
+/glossary_sft.jsonl
+.venv-glossary/

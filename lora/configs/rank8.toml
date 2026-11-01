@@ -1,0 +1,6 @@
+# baseline.toml の設定を引き継ぐ。alpha は 32 のまま、rank だけ下げる。
+[experiment]
+name = "rank8"
+
+[lora]
+r = 8

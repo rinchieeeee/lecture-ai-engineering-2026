@@ -1,0 +1,6 @@
+# alpha は baseline と同じ 32 のまま、rank だけ 16 → 4 に下げる。
+[experiment]
+name = "rank4"
+
+[lora]
+r = 4
