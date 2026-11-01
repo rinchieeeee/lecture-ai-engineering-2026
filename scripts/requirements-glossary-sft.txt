@@ -1,0 +1,9 @@
+torch==2.11.0
+transformers==5.18.0
+peft==0.21.1
+trl==1.14.2
+accelerate==1.15.0
+datasets==5.1.0
+
+# 比較図の生成（学習自体には不要）
+matplotlib==3.11.2

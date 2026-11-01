@@ -1,0 +1,191 @@
+{
+  "experiment_id": "20261101-default",
+  "protocol": {
+    "experiment_id": "20261101-default",
+    "model": "Qwen/Qwen3.5-0.8B",
+    "revision": "2fc06364715b967f1860aea9cf38778875588b17",
+    "dtype": "float32",
+    "seed": 42,
+    "generation": {
+      "max_new_tokens": 384,
+      "do_sample": false,
+      "eos_token_id": 248046,
+      "pad_token_id": 248044
+    },
+    "enable_thinking": false,
+    "system_sha256": "699b45ee98eeece9def8eca98a1c4983ecb3155f2eeaaddf795329c7b197cb9a",
+    "dataset_sha256": {
+      "train.jsonl": "56da0faedd848e3064ae2eb43b00143b2f0b844ff79b976e5a08e8e56cf286e2",
+      "valid.jsonl": "ddbf66a976290ad684317a23d812db77bbd6f03cf1b44cb3ece1137bb8bd5c6d",
+      "test.jsonl": "0f6a1cff30208924cdd153ede4d7a1be04b5acb57144aa437a1595aa928d80de",
+      "gold.json": "993992286500961273b06fee2fa88f60854106f6a00e6611e571327b6c58d3a1",
+      "metadata.json": "05ffddf72c333d7da0b220320d16dd13fb0f4917a86439e229d8486774603498",
+      "cases.json": "6904a079ecb99f65f5db23210870e4f39eb385932e12299fc08c913d5f193710"
+    }
+  },
+  "training_config": {
+    "num_train_epochs": 20,
+    "per_device_train_batch_size": 4,
+    "gradient_accumulation_steps": 2,
+    "learning_rate": 0.0002,
+    "lr_scheduler_type": "cosine",
+    "warmup_steps": 6,
+    "logging_steps": 10,
+    "save_steps": 100,
+    "save_total_limit": 1,
+    "fp16": false,
+    "bf16": false,
+    "max_length": 512,
+    "packing": false,
+    "report_to": "none",
+    "seed": 42,
+    "eval_strategy": "no",
+    "per_device_eval_batch_size": 1,
+    "disable_tqdm": true
+  },
+  "lora": {
+    "r": 16,
+    "lora_alpha": 32,
+    "lora_dropout": 0.05,
+    "bias": "none",
+    "task_type": "CAUSAL_LM",
+    "target_modules": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "o_proj",
+      "gate_proj",
+      "up_proj",
+      "down_proj"
+    ]
+  },
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "versions": {
+    "torch": "2.11.0",
+    "transformers": "5.18.0",
+    "peft": "0.21.1",
+    "trl": "1.14.2",
+    "datasets": "5.1.0",
+    "accelerate": "1.15.0"
+  },
+  "training": {
+    "seconds": 383.1,
+    "global_step": 460,
+    "epoch": 20.0,
+    "training_loss": 0.14811211798502052
+  },
+  "last_logged_loss": 0.03386847376823425,
+  "correctness_rule": "JSON形式と内容の両方を満たせば正解。内容はneeds_reviewの一致と必須語句の包含。自動採点。",
+  "summary": {
+    "before": {
+      "n": 36,
+      "format_rate": 0.3055555555555556,
+      "content_rate": 0.0,
+      "both_rate": 0.0
+    },
+    "after": {
+      "n": 36,
+      "format_rate": 1.0,
+      "content_rate": 0.4444444444444444,
+      "both_rate": 0.4444444444444444
+    },
+    "groups": {
+      "improved": 16,
+      "regressed": 0,
+      "both_correct": 0,
+      "both_incorrect": 20
+    }
+  },
+  "by_category": {
+    "known": {
+      "before": {
+        "n": 12,
+        "format_rate": 0.08333333333333333,
+        "content_rate": 0.0,
+        "both_rate": 0.0
+      },
+      "after": {
+        "n": 12,
+        "format_rate": 1.0,
+        "content_rate": 1.0,
+        "both_rate": 1.0
+      }
+    },
+    "paraphrase": {
+      "before": {
+        "n": 12,
+        "format_rate": 0.4166666666666667,
+        "content_rate": 0.0,
+        "both_rate": 0.0
+      },
+      "after": {
+        "n": 12,
+        "format_rate": 1.0,
+        "content_rate": 0.08333333333333333,
+        "both_rate": 0.08333333333333333
+      }
+    },
+    "unknown": {
+      "before": {
+        "n": 12,
+        "format_rate": 0.4166666666666667,
+        "content_rate": 0.0,
+        "both_rate": 0.0
+      },
+      "after": {
+        "n": 12,
+        "format_rate": 1.0,
+        "content_rate": 0.25,
+        "both_rate": 0.25
+      }
+    }
+  },
+  "groups": {
+    "improved": [
+      "known-token",
+      "known-context-window",
+      "known-temperature",
+      "known-hallucination",
+      "known-sft",
+      "known-peft",
+      "known-lora",
+      "known-qlora",
+      "known-overfitting",
+      "known-ai-agent",
+      "known-structured-output",
+      "paraphrase-structured-output",
+      "known-mcp",
+      "unknown-transformer",
+      "unknown-self-attention",
+      "unknown-beam-search"
+    ],
+    "regressed": [],
+    "both_correct": [],
+    "both_incorrect": [
+      "paraphrase-token",
+      "paraphrase-context-window",
+      "paraphrase-temperature",
+      "paraphrase-hallucination",
+      "paraphrase-sft",
+      "paraphrase-peft",
+      "paraphrase-lora",
+      "paraphrase-qlora",
+      "paraphrase-overfitting",
+      "paraphrase-ai-agent",
+      "paraphrase-mcp",
+      "unknown-rlhf",
+      "unknown-dpo",
+      "unknown-ppo",
+      "unknown-moe",
+      "unknown-embedding",
+      "unknown-vector-db",
+      "unknown-distillation",
+      "unknown-pruning",
+      "unknown-speculative-decoding"
+    ]
+  },
+  "generation_limit_counts": {
+    "before": 4,
+    "after": 0
+  }
+}
