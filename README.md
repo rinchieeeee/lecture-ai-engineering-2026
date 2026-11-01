@@ -13,7 +13,7 @@ AIエンジニアリング実践講座（AIE2026）の演習と宿題で使う�
 | GitHub Codespaces | 第1・3・5回などの開発環境。`.devcontainer/` の設定で Python 3.12・uv・Node.js が入ったコンテナが自動で用意されます | 個人アカウントの無料枠は月 120 コア時間（2 コアで約 60 時間）。**使い終わったら停止**してください |
 | GitHub Copilot（Free でよい） | コードの補完とチャット。第5回の発展課題では MCP クライアントとしても使います | Free は補完・チャットの回数に月の上限があります |
 | Gemini API（Google AI Studio の無料枠） | LLM の呼び出し。**個人**の Google アカウントでキーを発行し、Codespaces secret `GEMINI_API_KEY` で渡します | 無料枠には 1 分あたり・1 日あたりの上限があります（下の「前提と制約」） |
-| Google Colab（T4 GPU、無料枠） | 第2回の LoRA 学習だけに使います | GPU の利用時間に上限があります。終わったらランタイムを削除してください |
+| CUDA GPU のある環境（Google Colab の T4 など） | 第2回の LoRA 学習に使います。Python スクリプトで実行します | Colab は GPU の利用時間に上限があります。終わったらランタイムを削除してください |
 
 自分の PC で動かす場合は、Python 3.12 と [uv](https://docs.astral.sh/uv/) を入れて `uv sync --frozen` を実行し、環境変数 `GEMINI_API_KEY` を設定してください。
 
@@ -47,14 +47,20 @@ app/
 data/
   glossary.json  講座の用語集
   lectures/      各回の要点
+  lora/          第2回：架空 FAQ・質問・評価用の語句（編集可能な JSON）
 lectures/NN/
   problem.md     その回の演習と宿題
   answer.md      あなたが記入して提出するファイル
-notebooks/       第2回：Google Colab で動かす LoRA のノートブック（lora_format_tuning.ipynb）
+lora/            第2回：LoRA の学習・評価スクリプト、TOML 設定、実行手順
+  configs/       基準設定と比較実験の設定
+runs/lora/       実行ごとの設定・データ・adapter・評価結果（Git 管理外）
 scripts/         補助スクリプト
 tests/           テスト（APIキー不要）
 pyproject.toml / uv.lock  依存パッケージとその固定版
 ```
+
+第2回の学習は [lora/README.md](lora/README.md) を参照してください。
+学習用の依存関係は `lora/requirements.txt` に分離してあり、通常の `uv sync --frozen` ではインストールされません。
 
 ## 提出のしかた
 

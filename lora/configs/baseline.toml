@@ -1,0 +1,40 @@
+# ノートブックと同じ基本条件。パスはリポジトリルートからの相対パス。
+[experiment]
+name = "baseline"
+output_root = "runs/lora"
+seed = 42
+quantization_eval = false # 4bit の学習前評価も行う（bitsandbytes が必要）
+
+[model]
+name = "Qwen/Qwen3.5-0.8B"
+revision = "2fc06364715b967f1860aea9cf38778875588b17"
+device = "auto" # auto / cuda / mps / cpu
+dtype = "float32"
+
+[data]
+task_file = "data/lora/faq.json"
+dataset_dir = "" # 指定すると train.jsonl / valid.jsonl / test.jsonl / gold.json を読み込む
+
+[lora]
+r = 16
+lora_alpha = 32
+lora_dropout = 0.05
+target_modules = ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+
+[training]
+num_train_epochs = 20.0
+per_device_train_batch_size = 4
+gradient_accumulation_steps = 2
+learning_rate = 2e-4
+lr_scheduler_type = "cosine"
+warmup_steps = 6
+logging_steps = 10
+save_steps = 10
+save_total_limit = 2
+max_length = 512
+fp16 = false
+bf16 = false
+
+[generation]
+max_new_tokens = 96
+do_sample = false

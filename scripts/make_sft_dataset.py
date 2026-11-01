@@ -3,7 +3,8 @@
 使い方:
     uv run python scripts/make_sft_dataset.py > glossary_sft.jsonl
 
-できたファイルを Colab にアップロードし、LoRA 学習のデータとして使う。
+できたファイルを data.dataset_dir の train.jsonl に置き、LoRA 学習に使う。
+valid.jsonl / test.jsonl / gold.json の用意と設定方法は lora/README.md を参照。
 質問の言い回しを増やす、別名でも質問を作る、検証用に一部を分ける、などを工夫してみよう。
 """
 

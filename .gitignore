@@ -1,4 +1,6 @@
 .venv/
+.venv-lora/
+runs/
 __pycache__/
 .pytest_cache/
 *.pyc

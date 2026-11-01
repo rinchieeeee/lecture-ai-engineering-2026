@@ -1,6 +1,7 @@
 # 第2回 演習・宿題：LoRA で回答形式を学習し、学習前後を比較する
 
-この回は Google Colab（T4 GPU、無料枠）で行います。Codespaces は使いません。
+この回は CUDA GPU のある環境（Google Colab の T4 など）で Python スクリプトを実行します。
+セットアップと Colab での実行方法は [lora/README.md](../../lora/README.md) を参照してください。
 
 ## この回のゴール
 
@@ -8,58 +9,90 @@
 - 「形式は学習で身につくが、知らないことへの判断（確認を求めるか、断定するか）までは保証されない」ことを、自分の結果で説明できる
 - ファインチューニングが向く場面と向かない場面を、自分の言葉で説明できる
 
-## 使うノートブック
+## 使うコードと設定
 
-- [notebooks/lora_format_tuning.ipynb](../../notebooks/lora_format_tuning.ipynb)
-- Colab で開く：https://colab.research.google.com/github/matsuolab/lecture-ai-engineering-2026/blob/main/notebooks/lora_format_tuning.ipynb
+- [lora/train.py](../../lora/train.py)：学習前評価 → LoRA 学習 → 学習後評価・知識質問
+- [lora/configs/baseline.toml](../../lora/configs/baseline.toml)：基準設定
+- [data/lora/faq.json](../../data/lora/faq.json)：架空 FAQ・質問・正解の語句
 
-架空の講座 FAQ（5 項目）を題材に、`Qwen/Qwen3.5-0.8B` を LoRA で 20 エポック（学習データ 14 件を 20 周、40 ステップ。T4 で 4〜5 分）学習します。
-望ましい出力は `{"answer": ..., "needs_review": ...}` の JSON 1 行で、FAQ に無い質問には `needs_review: true` で「確認が必要」と答えるのが正解です。
-評価は **形式遵守率**（JSON の形式を守れたか）と **内容正解率**（`needs_review` と答えの語句が正解と合うか）の 2 つに分けます。
+架空の講座 FAQ（5 項目）を題材に、`Qwen/Qwen3.5-0.8B` を LoRA で 20 エポック
+（学習データ 14 件を 20 周、40 ステップ。元の Colab T4 での目安は 4〜5 分）学習します。
+望ましい出力は `{"answer": ..., "needs_review": ...}` の JSON 1 行で、
+FAQ に無い質問には `needs_review: true` で「確認が必要」と答えるのが正解です。
+評価は **形式遵守率**（JSON の形式を守れたか）と **内容正解率**
+（`needs_review` と答えの語句が正解と合うか）に分けます。
 
-## 事前準備（任意、5 分）
+## 事前準備
 
-授業の前にノートブックのセクション 0〜3 を実行し、GPU の割り当て、ライブラリの導入、モデルのダウンロードができることを確かめておくと、当日の詰まりが減ります。
-Colab はセッションが切れると変数が消えるので、当日はあらためて 0 から実行します。
+学習用の環境を用意し、リポジトリルートでデータ生成を確認します。
+設定・データの確認だけなら GPU や学習ライブラリは不要です。
+
+```bash
+python -m lora.train --prepare-only
+```
+
+`train=14 / valid=7 / test=21 / gold=21` と表示されることを確認してください。
 
 ## 演習（30分）
 
-1. Colab でノートブックを開き、**ファイル → ドライブにコピーを保存** で自分用にコピーする
-2. **ランタイム → ランタイムのタイプを変更 → T4 GPU** を選ぶ
-3. セクション 0〜3 を上から実行する（約 5 分）。学習前の表で、**どのキーが欠けているか**、文面は FAQ と合っているかを読む
-4. セクション 4 で学習する（4〜5 分）。待ち時間に「LoRA と QLoRA の違い」の説明を読む。`trainable%` と `Training Loss` の推移を確認する
-5. セクション 5〜6 で学習後を評価し、学習前と比べる
-   - 比較表：`format_rate` と `content_rate` はどう変わったか
-   - `退行`：学習前は通っていたのに学習後に落ちた質問（空が期待値）
-   - 残った失敗の型：FAQ に無い質問に別項目を当てて**断定**したか、FAQ にある質問に「記載がありません」と**逃げた**か
-   - セクション 6：FAQ にも学習データにも無い質問に、確認を求めたか・断定したか
-6. セクション 7 で `result.json` を作る。要点を `lectures/02/answer.md` に書き、作業ブランチ `lec02` から自分の fork の `main` へ PR を出す（answer.md の編集は GitHub の画面上で行ってもよい）。`result.json` は `lectures/02/` に置いて PR に含めてもよい
-7. **ランタイム → ランタイムを接続解除して削除**
+1. GPU 環境を用意する。Colab では T4 GPU を選んでリポジトリを取得し、依存ライブラリを導入する
+2. `python -m lora.train --config lora/configs/baseline.toml` を実行する
+   （ローカルでは `.venv-lora/bin/python` を使う）
+3. 学習前評価、学習、学習後評価の進捗を確認する。学習中は `trainable%` と loss の推移を見る
+4. 表示された実験ディレクトリの `result.json` と `eval_before.json` / `eval_after.json` を開き、比較する
+   - `format_rate` と `content_rate` はどう変わったか
+   - `regressed`：学習前は形式も内容も通ったのに、学習後に落ちた質問
+   - 残った失敗：FAQ に無い質問に別項目を当てて**断定**したか、FAQ にある質問に「記載がありません」と**逃げた**か
+   - `knowledge`：FAQ にも学習データにも無い質問に確認を求めたか・断定したか。FAQ にある質問は対照として読む
+5. 要点を `lectures/02/answer.md` に書き、作業ブランチ `lec02` から自分の fork の `main` へ PR を出す。
+   `result.json` は `lectures/02/` にコピーして PR に含めてもよい
+6. Colab を使った場合は結果をダウンロードまたは Drive に保存し、ランタイムを接続解除して削除する
 
-> Colab の GPU は無料枠で使える時間に限りがあります。終わったら必ずランタイムを削除してください。
-> GPU が割り当てられない、または時間内に学習が終わらないときは、ノートブックの 4b に従い、講師が T4 で実行した結果を見ながら比較と考察を進めます。提出時は `executed_training_myself` を `False` にし、自分で実行できた範囲を answer.md に書いてください。
+GPU が割り当てられない、または時間内に学習が終わらないときは、
+[reference/README.md](reference/README.md) の参考結果を使って比較と考察を進めます。
+参考結果を使うときは、提出する `result.json` の `executed_training_myself` を `false` にし、
+自分で実行できた範囲を `answer.md` に書いてください。
 
-seed を固定しても、GPU 上の学習は完全には再現しません。隣の人と「残った質問」が違っても異常ではないので、失敗の型で比べてください。
+seed を固定しても GPU 上の学習は完全には再現しません。
+隣の人と「残った質問」が違っても異常ではないので、失敗の型で比べてください。
 
 ## 宿題（どれか1つで完了）
 
 | レベル | 内容 |
 |---|---|
-| 基礎 | `CONFIG` の `lora_r`・`lr`・`num_train_epochs` のどれか 1 つを変えて再学習し、`format_rate`・`content_rate`・最終 loss・学習時間を元の設定と並べて記録する。変えたら **ランタイム → セッションを再起動** して上から実行する（学習後のモデルが残っているため）。`result.json` を 2 つ比べる |
-| 実装 | `FAQ`・`GROUNDED`・`UNGROUNDED` を自分の題材（5 項目程度）に置き換えて学習し、学習前後を比べる。JSON の形式と `needs_review` の設計はそのまま使う。「根拠なし」の質問をどう用意したかも書く |
-| 発展 | `scripts/make_sft_dataset.py` で講座の用語集から Q&A データ（`messages` 形式の JSONL）を作り、FAQ の代わりに学習させる。評価用の質問（用語集にある語・言い回しを変えた質問・用語集にない語）と正解を自分で用意し、学習前後を比べる。第3回で作る「用語集を検索するエージェント」と比べて、どちらが向いているかを考察する |
+| 基礎 | `lora.r`・`training.learning_rate`・`training.num_train_epochs` のどれか 1 つを変えて再学習し、形式遵守率・内容正解率・最終ログの loss・学習時間を基準設定と比較する |
+| 実装 | `data/lora/faq.json` を自分の題材（5 項目程度）に置き換え、`data.task_file` で指定して学習前後を比べる。JSON の形式と `needs_review` の設計はそのまま使い、「根拠なし」の質問をどう用意したかも書く |
+| 発展 | 用語集から Q&A データを作り、独自データ用フォルダを `data.dataset_dir` で指定して学習する。用語集にある語・言い換え・用語集にない語を含む評価データと正解も用意する。第3回の「用語集を検索するエージェント」と比べる |
 
-発展のデータ作成（Codespaces で実行し、できたファイルを Colab にアップロードする）：
+基礎の実行例：
+
+```bash
+.venv-lora/bin/python -m lora.train \
+  --set 'experiment.name="epochs10"' \
+  --set training.num_train_epochs=10
+.venv-lora/bin/python -m lora.compare runs/lora/*
+```
+
+毎回の実行で基盤モデルを読み直すため、条件変更時にランタイムを再起動する必要はありません。
+設定ファイルを残す場合は `lora/configs/rank8.toml` を参考に新しい TOML を作成してください。
+
+発展のデータ作成：
 
 ```bash
 uv run python scripts/make_sft_dataset.py > glossary_sft.jsonl
 ```
 
-Colab 側では、各行がノートブックの `to_chat` と同じ `messages` 形式なので、読み込んだ行を `Dataset.from_list` にそのまま渡せば、セクション 4 の `SFTTrainer` でそのまま学習できます。評価（`test` と `gold`）は用語集に合わせて自分で作り直してください。
+生成結果を `messages` 形式の `train.jsonl` / `valid.jsonl` に分け、
+評価用の `test.jsonl` / `gold.json` と、題材に合うプロンプトを用意します。
+データ形式と設定例は [lora/README.md](../../lora/README.md) を参照してください。
+用語集の教師応答は通常の文章なので、JSON の形式を評価する場合は教師応答も合わせてください。
 
-セクション 8（4bit で読み込んで出力を比べる）は学習をしない観察なので、どのレベルでも結果に添えてかまいません。4bit のまま学習する方法（QLoRA）は、この講座の環境（T4）では動作を確認していないため、宿題の対象外です。
+任意の 4bit 比較は `experiment.quantization_eval=true` で有効にできます。
+これは学習をしない観察なので、どのレベルでも結果に添えてかまいません。
+4bit のまま学習する QLoRA は宿題の対象外です。
 
-## 注意
+## 中断した場合
 
-- 学習後は変数 `model` にも adapter が差し込まれています。学習前の出力を取り直すときは `tuned.disable_adapter()`（セクション 6 参照）を使うか、セッションを再起動します
-- ノートブックのライブラリは動作確認した版（セクション 0 の `PINS`）に固定しています。版を変えると動かなくなることがあります
+checkpoint が保存されていれば、`python -m lora.train --resume <実験ディレクトリ>` で再開します。
+元の実験の設定・データを使うので、ソース側の設定や FAQ を編集しても再開条件は変わりません。
+checkpoint が無い場合は新規に実行してください。

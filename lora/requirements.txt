@@ -1,0 +1,7 @@
+# 元の Colab ノートブックで使用していた版。通常の演習用環境とは分離する。
+torch==2.11.0
+transformers==5.18.0
+peft==0.21.1
+trl==1.14.2
+accelerate==1.15.0
+datasets==5.1.0
