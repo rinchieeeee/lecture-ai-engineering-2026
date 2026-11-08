@@ -15,7 +15,25 @@
 
 ## 宿題
 
-- 取り組んだレベル：基礎 / 実装 / 発展
-- やったこと：
-- 結果：
-- 気づき・疑問：
+- 取り組んだレベル：基礎
+
+### 基礎
+
+#### Instructions から「用語や講座に固有のことを答える前に、必ず search_glossary で用語集を確認する。」という記述を消して答えられるか確認する
+
+結果: 消しても search_glossary tool を用いて検索を実施し、適切な回答ができていた。
+
+#### Instructions は既存のまま、search_glossary の docstring を変更して検索ツールを用いられるか確認する
+
+- 既存設定からの変更点:
+  - search_glossary の docstring を「住所関連の質問に答えるときに使う」と検索ツールであることを明示的に書かない
+結果:
+- search_glossary tool を用いて検索を実施でき、適切な回答ができていることは変わらない。
+-> Instructions に search_glossary を使うことを明記しているので適切に使われているのでは？
+
+#### Instruction・search_glossary の docstring を同時に変更して、結果が変わるか確認する
+- 既存設定からの変更点:
+  - Instructions から「用語や講座に固有のことを答える前に、必ず search_glossary で用語集を確認する。」という記述を消す。
+  - search_glossary の docstring を「住所関連の質問に答えるときに使う」と検索ツールであることを明示的に書かない
+- 結果:
+  - search_glossary tool を用いて検索を実施でき、適切な回答ができていることは変わらない。
