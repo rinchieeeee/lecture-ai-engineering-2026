@@ -37,3 +37,32 @@
   - search_glossary の docstring を「住所関連の質問に答えるときに使う」と検索ツールであることを明示的に書かない
 - 結果:
   - search_glossary tool を用いて検索を実施でき、適切な回答ができていることは変わらない。
+
+#### search_glossary の docstring で複数用語を比較する質問に対する挙動を追記して、呼び出し回数が減るか確認する
+- 既存設定からの変更点
+  - search_glossary の docstring の末尾に「複数の用語を比較する質問では、用語ごとに検索せず、すべての用語を1つのqueryにまとめて検索する」を追加。
+- 比較方法:
+  - 質問: 「LoRA と QLoRA の違いは？」
+  - 期待される変更点: tool_calls の呼び出し回数が変更前は2回、変更後は1回になる。
+- 結果
+  - 変更前: 2回
+  - 変更後: 1回
+
+```
+変更前
+--- trace ---
+[tool call]   search_glossary({'query': 'LoRA'})
+[tool call]   search_glossary({'query': 'QLoRA'})
+~~省略~~
+[usage] details={'text_prompt_tokens': 1348}, input_text_tokens=1348, input_tokens=1348, output_tokens=174, requests=2, tool_calls=2
+
+
+--- 変更後 ---
+
+--- trace ---
+[tool call]   search_glossary({'query': 'LoRA QLoRA'})
+~~省略~~
+[usage] details={'text_prompt_tokens': 1091}, input_text_tokens=1091, input_tokens=1091, output_tokens=218, requests=2, tool_calls=1
+```
+
+
