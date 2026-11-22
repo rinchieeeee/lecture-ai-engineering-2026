@@ -1375,8 +1375,19 @@ def assemble_facet_answer(
     )
 
 
-def format_markdown(answer: StructuredAnswer, *, show_trace: bool = False) -> str:
-    """StructuredAnswer をエージェント回答風の読みやすいMarkdownに整形する。"""
+def _clean_page_body(page: dict) -> str:
+    """スライド本文から著作権・重複見出しのみを除き、文章を切らずにそのまま整形する。"""
+    body_lines, _ = _clean_slide_lines(page)
+    return "\n".join(body_lines)
+
+
+def format_markdown(
+    answer: StructuredAnswer,
+    *,
+    show_trace: bool = False,
+    extract_only: bool = False,
+) -> str:
+    """StructuredAnswer を観点別の根拠付きテキストに整形する（既定は関連ページ全文表示）。"""
     mode_label = (
         "Hybrid RAG（埋め込みベクトル + BM25/n-gram）x Tree x 改良Graph（LLM回答生成なし）"
         if answer.mode == "hybrid"
@@ -1390,36 +1401,60 @@ def format_markdown(answer: StructuredAnswer, *, show_trace: bool = False) -> st
         "",
     ]
 
+    shown_in_facet: dict[str, int] = {}
+
     for fa in answer.facet_answers:
+        lines.append("=" * 60)
         lines.append(f"## {fa.facet.index}. {fa.facet.label}")
+        lines.append("=" * 60)
         if fa.status != "supported":
             missing = "・".join(fa.missing_keywords[:5]) if fa.missing_keywords else "該当語"
             lines.append(
-                f"- 確認できません: 第1〜3回の本講義資料内に直接の根拠が見つかりませんでした"
+                f"確認できません: 第1〜3回の本講義資料内に直接の根拠が見つかりませんでした"
                 f"（未検出キーワード: {missing}）。"
             )
             lines.append("")
             continue
 
-        for pt in fa.summary_points:
-            lines.append(f"- 要点: {pt.text}（{pt.citation}）")
+        if extract_only:
+            for pt in fa.summary_points:
+                lines.append(f"- 要点: {pt.text}（{pt.citation}）")
+            if fa.contrast_items:
+                lines.append("- 整理・対比:")
+                for lbl, body, cit in fa.contrast_items:
+                    lines.append(f"  - {lbl}: {body}（{cit}）")
+            if fa.detail_points:
+                lines.append("- 補足・根拠抜粋:")
+                for pt in fa.detail_points:
+                    lines.append(f"  - {pt.text}（{pt.citation}）")
+            cites = ", ".join(
+                f"第{ep.lecture}回・PDF p.{ep.page}「{ep.title}」"
+                for ep in fa.evidence_pages
+            )
+            lines.append(f"- 参照根拠: {cites}")
+            lines.append("")
+            continue
 
-        if fa.contrast_items:
-            lines.append("- 整理・対比:")
-            for lbl, body, cit in fa.contrast_items:
-                lines.append(f"  - {lbl}: {body}（{cit}）")
+        # 既定: 関連性が高いページの文章を途切れさせずにそのまま表示（他観点で表示済みなら重複省略）
+        for rank, ep in enumerate(fa.evidence_pages, 1):
+            header = f"[根拠 {fa.facet.index}-{rank}] 第{ep.lecture}回・PDF p.{ep.page}｜{ep.title}"
+            if ep.page_id in shown_in_facet:
+                lines.append(f"{header}（観点{shown_in_facet[ep.page_id]}で本文表示済み）")
+                lines.append("")
+                continue
 
-        if fa.detail_points:
-            lines.append("- 補足・根拠抜粋:")
-            for pt in fa.detail_points:
-                lines.append(f"  - {pt.text}（{pt.citation}）")
-
-        cites = ", ".join(
-            f"第{ep.lecture}回・PDF p.{ep.page}「{ep.title}」"
-            for ep in fa.evidence_pages
-        )
-        lines.append(f"- 参照根拠: {cites}")
-        lines.append("")
+            shown_in_facet[ep.page_id] = fa.facet.index
+            sim_str = f" / vec={ep.vector_similarity:.3f}" if ep.vector_similarity is not None else ""
+            lines.append(header)
+            lines.append(f"  章: {ep.section} / 取得: {', '.join(ep.provenance[:3])}{sim_str}")
+            lines.append("-" * 60)
+            body = _clean_page_body({
+                "title": ep.title,
+                "section": ep.section,
+                "content": ep.content,
+            })
+            lines.append(body)
+            lines.append("")
 
     # 根拠サマリ・トレース
     lines.append("---")
@@ -1435,7 +1470,7 @@ def format_markdown(answer: StructuredAnswer, *, show_trace: bool = False) -> st
                         existing_prov.append(p)
 
     if all_pages:
-        lines.append("### 根拠ページと取得経路")
+        lines.append("### 根拠ページ一覧と取得経路")
         for ep, provs in all_pages.values():
             sim_str = f" / vec={ep.vector_similarity:.3f}" if ep.vector_similarity is not None else ""
             lines.append(
@@ -1443,7 +1478,7 @@ def format_markdown(answer: StructuredAnswer, *, show_trace: bool = False) -> st
                 f"{', '.join(provs[:4])}{sim_str}"
             )
     else:
-        lines.append("### 根拠ページと取得経路")
+        lines.append("### 根拠ページ一覧と取得経路")
         lines.append("- 採用された根拠ページはありません（根拠不足として棄却）。")
 
     if show_trace:
@@ -1484,7 +1519,7 @@ def run_structured_rag(
     db_path: Path = retrieval.RAG_DB,
     glossary: list[dict] | None = None,
     embedder: Callable[[str, str], list[float]] | None = None,
-    max_pages_per_facet: int = 3,
+    max_pages_per_facet: int = 2,
 ) -> StructuredAnswer:
     """Tree x 改良Graph x ハイブリッドRAG で構造化回答を生成する（生成LLM不使用）。"""
     started = perf_counter()
@@ -1598,14 +1633,20 @@ def main() -> None:
     parser.add_argument("question", help="調べたい質問")
     parser.add_argument("--offline", action="store_true", help="埋め込みAPIを使わずローカル検索(BM25/n-gram+Tree+Graph)のみで実行する")
     parser.add_argument("--trace", action="store_true", help="観点分解・Tree・Graphの詳細トレースを表示する")
+    parser.add_argument("--extract", action="store_true", help="ページ全文ではなく抽出ブロックのみで簡略表示する")
+    parser.add_argument("--max-pages", type=int, default=2, help="1観点あたりに表示する最大根拠ページ数（既定: 2）")
     parser.add_argument("--json", action="store_true", dest="as_json", help="結果を構造化JSONで出力する")
     args = parser.parse_args()
 
-    result = run_structured_rag(args.question, offline=args.offline)
+    result = run_structured_rag(
+        args.question,
+        offline=args.offline,
+        max_pages_per_facet=args.max_pages,
+    )
     if args.as_json:
         print(json.dumps(asdict(result), ensure_ascii=False, indent=2))
     else:
-        print(format_markdown(result, show_trace=args.trace))
+        print(format_markdown(result, show_trace=args.trace, extract_only=args.extract))
 
 
 if __name__ == "__main__":
