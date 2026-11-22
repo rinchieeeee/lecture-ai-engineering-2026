@@ -5,6 +5,7 @@ import json
 import math
 import re
 import sqlite3
+import struct
 from contextlib import contextmanager
 from collections import defaultdict, deque
 from pathlib import Path
@@ -136,6 +137,20 @@ def search(query: str) -> list[dict]:
             FROM chunks ORDER BY distance, page_id LIMIT ?
         """, (sqlite_vec.serialize_float32(vector), RAG_TOP_K))
         return [dict(row) for row in rows]
+
+
+def load_page_embeddings(path: Path = RAG_DB) -> dict[str, list[float]]:
+    """既存の検索DBから全ページの事前計算済み埋め込みベクトルを読み出す。"""
+    with open_index(path) as db:
+        rows = db.execute("SELECT page_id, embedding FROM chunks")
+        vectors: dict[str, list[float]] = {}
+        for row in rows:
+            blob = row["embedding"]
+            if not blob:
+                continue
+            count = len(blob) // 4
+            vectors[row["page_id"]] = list(struct.unpack(f"<{count}f", blob))
+        return vectors
 
 
 def search_graph(query: str) -> dict:
